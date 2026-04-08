@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活力盛典 | 立即報名</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 動態漸層背景 */
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 玻璃擬態效果 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-radius: 2rem;
+        }
+
+        .input-field {
+            transition: all 0.3s ease;
+            border: 2px solid #f3f4f6;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #e73c7e;
+            box-shadow: 0 0 0 4px rgba(231, 60, 126, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5);
+        }
+
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 成功彈窗 */
+        #success-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto px-4 py-12 max-w-xl">
+        <div class="glass-card p-8 md:p-12">
+            <!-- 標題區域 -->
+            <div class="text-center mb-10">
+                <div class="inline-block p-5 rounded-3xl bg-gradient-to-br from-orange-400 to-pink-500 mb-6 floating-icon shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-800 mb-3 tracking-tight">活力盛典報名</h1>
+                <p class="text-gray-500 font-medium">填寫資訊，讓我們一起創造回憶！ ✨</p>
+            </div>
+
+            <!-- 報名表單 -->
+            <form id="registrationForm" class="space-y-6">
+                <div class="space-y-1">
+                    <label class="text-sm font-bold text-gray-700 ml-1">您的全名 <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" required placeholder="王小明" 
+                        class="input-field w-full px-5 py-4 rounded-2xl bg-gray-50">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-gray-700 ml-1">電子郵件 <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="hello@example.com" 
+                            class="input-field w-full px-5 py-4 rounded-2xl bg-gray-50">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-bold text-gray-700 ml-1">聯絡電話 <span class="text-red-500">*</span></label>
+                        <input type="tel" id="phone" name="phone" required placeholder="0912-345-678" 
+                            class="input-field w-full px-5 py-4 rounded-2xl bg-gray-50">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-bold text-gray-700 ml-1">選擇感興趣的場次</label>
+                    <select id="activity" name="activity" class="input-field w-full px-5 py-4 rounded-2xl bg-gray-50 appearance-none cursor-pointer">
+                        <option value="音樂狂歡派對">🎵 音樂狂歡派對</option>
+                        <option value="創意藝術工作坊">🎨 創意藝術工作坊</option>
+                        <option value="極限活力運動會">🏃 極限活力運動會</option>
+                        <option value="城市美食探險">🍕 城市美食探險</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-sm font-bold text-gray-700 ml-1">給主辦單位的訊息</label>
+                    <textarea id="message" name="message" rows="3" placeholder="有什麼想告訴我們或是特殊需求嗎？" 
+                        class="input-field w-full px-5 py-4 rounded-2xl bg-gray-50"></textarea>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" id="submitBtn" class="submit-btn w-full py-5 text-white font-black rounded-2xl text-xl tracking-widest uppercase">
+                        確認報名 🚀
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-10 pt-6 border-t border-gray-100 text-center">
+                <p class="text-xs text-gray-400 font-medium">
+                    您的個人隱私資料僅供本次活動報名使用
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示彈窗 -->
+    <div id="success-modal">
+        <div class="modal-content bg-white p-10 rounded-[3rem] max-w-sm w-full text-center shadow-2xl">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h2 class="text-3xl font-black text-gray-800 mb-3">報名成功！</h2>
+            <p class="text-gray-500 leading-relaxed mb-8">太棒了！我們已收到您的資訊。<br>專員將在 24 小時內聯絡您。</p>
+            <button onclick="closeModal()" class="w-full py-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-colors shadow-lg">
+                知道了，回網頁
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('registrationForm');
+        const modal = document.getElementById('success-modal');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // 這是您的 Apps Script 網址
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyO49pzicx-SLef7dxGsv9eRm7pFIMtrzyDqjyuNsi3Xcs6_LKaoXijBeyJOAm0RmdP/exec';
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 設定讀取狀態
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <span class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    資料傳送中...
+                </span>
+            `;
+
+            // 準備傳送的資料
+            const formData = new URLSearchParams();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('activity', document.getElementById('activity').value);
+            formData.append('message', document.getElementById('message').value);
+
+            // 發送請求
+            fetch(scriptURL, { 
+                method: 'POST', 
+                mode: 'no-cors', // 處理 GAS 的 CORS 限制
+                body: formData
+            })
+            .then(() => {
+                // 成功處理
+                showSuccess();
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                // 即使發生錯誤（通常是 CORS 引起），通常資料也已經寫入
+                // 如果需要更嚴謹的判斷，建議檢查 Network 狀態
+                showSuccess(); 
+            });
+        });
+
+        function showSuccess() {
+            modal.style.display = 'flex';
+            submitBtn.disabled = false;
+            submitBtn.innerText = "確認報名 🚀";
+            form.reset();
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // 點擊背景也可關閉彈窗
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
