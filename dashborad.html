@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活力盛典 | 數據儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; }
+        .stat-card { background: white; border-radius: 2rem; transition: all 0.3s ease; border: 1px solid #eef2f6; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1); }
+        .loading-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <div>
+                <h1 class="text-4xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    即時監控儀表板 <span class="text-2xl">📊</span>
+                </h1>
+                <p id="statusMsg" class="text-slate-500 font-medium mt-1">連線狀態：等待同步...</p>
+            </div>
+            <button onclick="fetchData()" id="refreshBtn" class="flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-10 py-4 rounded-2xl font-bold shadow-xl transition-all active:scale-95">
+                <span id="refreshIcon">🔄</span> 同步最新數據
+            </button>
+        </header>
+
+        <!-- 核心指標 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <div class="stat-card p-8">
+                <p class="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">總報名人數</p>
+                <h2 id="totalCount" class="text-6xl font-black text-indigo-600">0</h2>
+            </div>
+            <div class="stat-card p-8">
+                <p class="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">今日新增</p>
+                <h2 id="todayCount" class="text-6xl font-black text-emerald-500">0</h2>
+            </div>
+            <div class="stat-card p-8">
+                <p class="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">熱門場次</p>
+                <h2 id="topActivity" class="text-2xl font-black text-slate-700 mt-3 truncate">讀取中...</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- 圖表區 -->
+            <div class="lg:col-span-5 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <h3 class="text-xl font-bold text-slate-800 mb-8 flex items-center gap-3">
+                    <span class="w-3 h-8 bg-indigo-500 rounded-full"></span> 場次分佈分析
+                </h3>
+                <div class="aspect-square max-h-[350px] mx-auto relative">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 名單區 -->
+            <div class="lg:col-span-7 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+                <h3 class="text-xl font-bold text-slate-800 mb-8 flex items-center gap-3">
+                    <span class="w-3 h-8 bg-orange-500 rounded-full"></span> 詳細報名清單
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-50 text-xs font-black uppercase tracking-widest">
+                                <th class="pb-5 px-2">姓名</th>
+                                <th class="pb-5 px-2">參加場次 (D 欄)</th>
+                                <th class="pb-5 px-2 text-right">報名日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentList" class="text-slate-600 text-sm italic">
+                            <!-- 資料插入點 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 這是您的 Apps Script 網址
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzdcf8tZxG6rCbMxleLw8dy8MlGwR9--ENLS2PwSGpJXYVcg2YaPEjrpcq4WVitLMsM/exec';
+        let myChart;
+
+        // 加強版欄位偵測邏輯
+        function findValue(obj, keywords) {
+            const entries = Object.entries(obj);
+            // 1. 先找完全符合關鍵字的標題
+            for (const [key, val] of entries) {
+                const k = key.trim();
+                if (keywords.some(kw => k.includes(kw))) {
+                    if (val !== null && val !== undefined && val.toString().trim() !== "") {
+                        return val.toString().trim();
+                    }
+                }
+            }
+            // 2. 如果沒對上，回傳預設值
+            return null;
+        }
+
+        async function fetchData() {
+            const btn = document.getElementById('refreshBtn');
+            const icon = document.getElementById('refreshIcon');
+            const status = document.getElementById('statusMsg');
+            
+            btn.disabled = true;
+            icon.classList.add('loading-spinner');
+            status.innerText = "正在從試算表同步資料...";
+
+            try {
+                const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    status.innerText = `✅ 同步成功：已讀取 ${data.length} 筆報名資料`;
+                    updateDashboard(data);
+                } else {
+                    status.innerText = "⚠️ 同步完成，但試算表內似乎沒有資料。";
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                status.innerText = "❌ 無法讀取資料，請確認 Apps Script 已部署為『所有人』。";
+            } finally {
+                btn.disabled = false;
+                icon.classList.remove('loading-spinner');
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('totalCount').innerText = data.length;
+
+            const activityCounts = {};
+            let todayCount = 0;
+            const todayStr = new Date().toLocaleDateString();
+
+            const processedData = data.map(item => {
+                // 偵測姓名：找包含『姓』或『名』的欄位
+                const name = findValue(item, ['姓名', 'Name', '人']) || "未提供姓名";
+                
+                // 偵測場次：找包含『場次』、『活動』或『參加』的欄位
+                // 您的試算表標題是『參加場次』，所以『場次』這兩個字一定會中
+                const activity = findValue(item, ['參加場次', '場次', '活動', 'Activity']) || "未選擇場次";
+                
+                // 偵測日期
+                const timeVal = findValue(item, ['時間', 'Timestamp', '日期']);
+                let dateObj = new Date(timeVal);
+                if (isNaN(dateObj.getTime())) dateObj = new Date();
+
+                if (dateObj.toLocaleDateString() === todayStr) todayCount++;
+                
+                activityCounts[activity] = (activityCounts[activity] || 0) + 1;
+
+                return { name, activity, date: dateObj };
+            });
+
+            document.getElementById('todayCount').innerText = todayCount;
+            
+            const sorted = Object.keys(activityCounts).sort((a,b) => activityCounts[b] - activityCounts[a]);
+            document.getElementById('topActivity').innerText = sorted[0] || "無數據";
+
+            renderChart(activityCounts);
+
+            // 更新表格
+            const recent = processedData.slice().reverse();
+            document.getElementById('recentList').innerHTML = recent.map(row => `
+                <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                    <td class="py-5 px-2 font-bold text-slate-800">${row.name}</td>
+                    <td class="py-5 px-2">
+                        <span class="px-3 py-1.5 rounded-xl text-xs font-black ${row.activity === '未選擇場次' ? 'bg-red-50 text-red-400' : 'bg-indigo-50 text-indigo-600'}">
+                            ${row.activity}
+                        </span>
+                    </td>
+                    <td class="py-5 px-2 text-right text-xs text-slate-400 font-bold">${row.date.toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderChart(counts) {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, font: { weight: 'bold' }, padding: 15 } }
+                    },
+                    cutout: '75%'
+                }
+            });
+        }
+
+        fetchData();
+        setInterval(fetchData, 60000); // 每一分鐘自動刷新
+    </script>
+</body>
+</html>
